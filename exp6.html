@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Experiment 2 &mdash; Verification of Malus' Law</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --muted:#94a3b8;
+    --accent:#38bdf8; --accent2:#a78bfa; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --line:#334155;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.55}
+  header{
+    background:linear-gradient(135deg,#0c4a6e 0%,#1e3a8a 50%,#4c1d95 100%);
+    padding:28px 20px 18px;border-bottom:2px solid var(--accent);
+  }
+  header h1{margin:0 0 4px;font-size:26px;letter-spacing:.2px}
+  header p{margin:0;color:#cbd5e1;font-size:14px}
+  header .meta{margin-top:6px;font-size:12px;color:#a5b4fc}
+  nav{
+    position:sticky;top:0;z-index:50;background:#0b1220;border-bottom:1px solid var(--line);
+    display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;
+  }
+  nav a{
+    color:var(--ink);text-decoration:none;font-size:13px;
+    padding:6px 10px;border:1px solid var(--line);border-radius:999px;
+  }
+  nav a:hover{background:#1e293b;border-color:var(--accent);color:var(--accent)}
+  main{max-width:1100px;margin:0 auto;padding:18px}
+  section{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:18px;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  section h2{margin-top:0;color:var(--accent);font-size:20px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  section h3{color:var(--accent2);font-size:16px;margin-top:18px}
+  .grid{display:grid;gap:12px}
+  .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:720px){.grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr}}
+  .card{
+    background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:12px;
+  }
+  .card b{color:var(--accent)}
+  .apparatus{display:flex;align-items:center;gap:10px}
+  .apparatus .ico{font-size:22px;width:36px;height:36px;display:grid;place-items:center;background:#0b1220;border:1px solid var(--line);border-radius:8px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input[type=number],input[type=text],select{
+    width:100%;padding:8px 10px;background:#0b1220;color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;
+  }
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  input[readonly]{background:#0b122080;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+  th{background:#0b1220;color:var(--accent);font-weight:600}
+  tbody tr:nth-child(even){background:#0b122060}
+  .formula{
+    background:#0b1220;border-left:4px solid var(--accent);
+    padding:10px 14px;border-radius:6px;font-family:Consolas,'Courier New',monospace;
+    margin:10px 0;color:#e0f2fe;
+  }
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#0b1220;border:1px solid var(--line)}
+  .pill.ok{background:#064e3b;color:#a7f3d0;border-color:#065f46}
+  .pill.warn{background:#78350f;color:#fde68a;border-color:#92400e}
+  .pill.bad{background:#7f1d1d;color:#fecaca;border-color:#991b1b}
+  button{
+    cursor:pointer;background:var(--accent);color:#0c1220;border:none;
+    padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;margin-right:6px;
+  }
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button.danger{background:var(--bad);color:#1f0808}
+  .result-box{
+    background:linear-gradient(135deg,#082f49,#1e1b4b);
+    border:1px solid var(--accent);border-radius:10px;padding:14px;margin-top:10px;
+  }
+  .result-box .big{font-size:22px;font-weight:700;color:#fde68a}
+  details{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0}
+  summary{cursor:pointer;color:var(--accent);font-weight:600}
+  .step-num{
+    display:inline-block;width:26px;height:26px;border-radius:50%;
+    background:var(--accent);color:#0c1220;text-align:center;line-height:26px;
+    font-weight:700;margin-right:8px;flex-shrink:0;
+  }
+  .step{display:flex;align-items:flex-start;margin-bottom:10px}
+  canvas{max-height:340px;max-width:100%}
+  .fig{
+    background:#f8fafc;color:#0f172a;padding:14px;border-radius:8px;
+    font-family:Consolas,monospace;font-size:12px;line-height:1.3;
+    overflow-x:auto;border:1px solid var(--line);
+  }
+  .fig img{display:block;margin:0 auto;max-width:100%;height:auto;background:#fff}
+  .viva-q{margin:6px 0;padding:8px 10px;background:#0b1220;border-left:3px solid var(--accent2);border-radius:4px}
+  .viva-q b{color:var(--accent2)}
+  .viva-a{color:var(--muted);font-size:13px;margin-top:4px}
+  .err{color:var(--bad);font-size:12px}
+  .ok{color:var(--good);font-size:12px}
+  .footer-note{text-align:center;color:var(--muted);font-size:12px;padding:14px}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .tag{display:inline-block;background:#1e293b;border:1px solid var(--line);color:var(--muted);font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px}
+
+  @media print{
+    nav,button,.row-actions,.no-print{display:none !important}
+    body,header,section{background:#fff !important;color:#000 !important;box-shadow:none}
+    section{border:1px solid #999;page-break-inside:avoid;margin-bottom:10px}
+    header{background:#fff !important;color:#000 !important;border-bottom:2px solid #000}
+    header h1,header p,header .meta{color:#000 !important}
+    th{background:#eee !important;color:#000 !important}
+    .formula{background:#f5f5f5;color:#000;border-left-color:#000}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Experiment 6 &mdash; Polarisation of Light and Verification of Malus' Law</h1>
+  <p>Optics &amp; Modern Physics Lab &middot; B.Tech First Year &middot; First Semester</p>
+  <div class="meta">Interactive Lab Notebook &middot; Type your readings &rarr; get live calculations, plots &amp; verification</div>
+</header>
+
+<nav>
+  <a href="#aim">Aim</a>
+  <a href="#apparatus">Apparatus</a>
+  <a href="#theory">Theory</a>
+  <a href="#procedure">Procedure</a>
+  <a href="#observations">Observations</a>
+  <a href="#plot">Plot</a>
+  <a href="#result">Result</a>
+  <a href="#viva">Viva</a>
+  <a href="#precautions">Precautions</a>
+  <button class="ghost no-print" onclick="window.print()" style="margin-left:auto">Print / Save PDF</button>
+  <button class="ghost no-print" onclick="resetAll()">Reset</button>
+</nav>
+
+<main>
+
+<!-- ============== AIM ============== -->
+<section id="aim">
+  <h2>1. Aim</h2>
+  <p>To study the <b>polarisation of light</b> using two polaroids (a polariser and an analyser) and to <b>verify Malus' Law</b>, which states that the intensity of light transmitted through the analyser varies as the square of the cosine of the angle between the transmission axes of the polariser and the analyser.</p>
+  <ul>
+    <li>Confirm that unpolarised light is converted to plane-polarised light by a polariser.</li>
+    <li>Measure the transmitted intensity as the analyser is rotated, and verify <i>I<sub>t</sub></i> = <i>I<sub>0</sub></i> cos<sup>2</sup>&theta;.</li>
+    <li>Quantify the agreement between data and theory (linear fit of <i>I</i> vs cos<sup>2</sup>&theta;).</li>
+  </ul>
+</section>
+
+<!-- ============== APPARATUS ============== -->
+<section id="apparatus">
+  <h2>2. Apparatus</h2>
+  <div class="grid cols-2">
+    <div class="card apparatus"><div class="ico">1</div><div><b>Optical bench</b><br><span class="pill">~1 m long, with scale</span></div></div>
+    <div class="card apparatus"><div class="ico">2</div><div><b>Transversal saddle</b><br><span class="pill">for photocell adjustment</span></div></div>
+    <div class="card apparatus"><div class="ico">3</div><div><b>Fixed saddle(s)</b><br><span class="pill">for laser / polariser / analyser</span></div></div>
+    <div class="card apparatus"><div class="ico">4</div><div><b>He&ndash;Ne laser</b><br><span class="pill">monochromatic source, &lambda; = 632.8 nm</span></div></div>
+    <div class="card apparatus"><div class="ico">5</div><div><b>Polariser</b><br><span class="pill">first polaroid, in rotatable mount</span></div></div>
+    <div class="card apparatus"><div class="ico">6</div><div><b>Analyser</b><br><span class="pill">second polaroid, in rotatable mount</span></div></div>
+    <div class="card apparatus"><div class="ico">7</div><div><b>Photocell (silicon)</b><br><span class="pill">light &rarr; current transducer</span></div></div>
+    <div class="card apparatus"><div class="ico">8</div><div><b>Digital multimeter</b><br><span class="pill">2000 &mu;A range</span></div></div>
+  </div>
+  <p style="margin-top:10px;font-size:13px;color:var(--muted)">
+    The numbering matches Fig. 3 in the Theory section: <b>1</b> optical bench, <b>2</b> transversal saddle, <b>3</b> fixed saddle, <b>4</b> He&ndash;Ne laser, <b>5</b> polariser, <b>6</b> analyser, <b>7</b> photocell, <b>8</b> digital multimeter.
+  </p>
+
+  <h3>2.1 Experimental set-up</h3>
+  <div class="fig">
+    <img src="fig6c.png" alt="Fig. 3 - Optical bench with He-Ne laser, polariser, analyser, photocell and multimeter"/>
+    <div style="text-align:center;margin-top:6px;color:#0f172a"><b>Fig. 3</b> &mdash; Optical-bench set-up for the verification of Malus' Law. The laser beam passes through the polariser (5) and the analyser (6); the transmitted light is collected by the photocell (7) connected to the multimeter (8).</div>
+  </div>
+</section>
+
+<!-- ============== THEORY ============== -->
+<section id="theory">
+  <h2>3. Theory</h2>
+
+  <p>Light is a <b>transverse wave</b> &mdash; the electric and magnetic vectors oscillate <i>perpendicular</i> to the direction of propagation. Light from ordinary sources (the sun, a candle, a bulb) is <b>unpolarised</b>: the tip of the electric-field vector traces a random pattern in the plane perpendicular to the propagation direction.</p>
+
+  <p>Certain materials, called <b>polaroids</b>, have a <b>transmission axis</b> along which the electric field is allowed to pass; the component perpendicular to that axis is absorbed. The light emerging from a polaroid is <b>plane-polarised</b>, with the electric vector confined to a single plane. Passing this plane-polarised beam through a <b>second</b> polaroid (the analyser) reduces its amplitude further, depending on the angle between the two transmission axes.</p>
+
+  <h3>3.1 Polarisation through two polaroids (Fig. 1)</h3>
+  <div class="fig">
+    <img src="fig6a.png" alt="Fig. 1 - Polarisation of light through polaroids: unpolarised light enters the polariser, polarised light passes through the analyser with amplitude A_t"/>
+    <div style="text-align:center;margin-top:6px;color:#0f172a"><b>Fig. 1</b> &mdash; An unpolarised beam is polarised by the first polaroid. The polarised beam of amplitude <i>A</i><sub>0</sub> then falls on the analyser whose transmission axis makes an angle &theta; with that of the polariser; the transmitted beam has amplitude <i>A<sub>t</sub></i>.</div>
+  </div>
+
+  <h3>3.2 Vector geometry of the analyser (Fig. 2)</h3>
+  <div class="fig">
+    <img src="fig6b.png" alt="Fig. 2 - Vector diagram: A_0 is resolved into A_0 cos(theta) along the analyser's transmission axis and A_0 sin(theta) perpendicular to it"/>
+    <div style="text-align:center;margin-top:6px;color:#0f172a"><b>Fig. 2</b> &mdash; Vector resolution of the incident amplitude <i>A</i><sub>0</sub>. The component along the analyser's transmission axis is <i>A</i><sub>0</sub> cos&theta; (this is transmitted); the perpendicular component <i>A</i><sub>0</sub> sin&theta; is absorbed.</div>
+  </div>
+
+  <p>If <i>A</i><sub>0</sub> is the amplitude falling on the analyser and <i>A<sub>t</sub></i> is the transmitted amplitude, then from Fig. 2</p>
+  <div class="formula">A<sub>t</sub> = A<sub>0</sub> cos &theta;       &nbsp;&nbsp; &mdash; (1)</div>
+
+  <p>The intensity of a wave is proportional to the <i>square</i> of its amplitude, so</p>
+  <div class="formula">I<sub>t</sub> = I<sub>0</sub> cos<sup>2</sup> &theta;       &nbsp;&nbsp; &mdash; (2)</div>
+
+  <p>Equation (2) is <b>Malus' Law</b>: <i>the transmitted intensity varies as the square of the cosine of the angle between the two transmission axes</i>.</p>
+
+  <h3>3.3 Verification strategy</h3>
+  <p>Eq. (2) predicts two equivalent signatures in the data:</p>
+  <ol>
+    <li>A <b>cos<sup>2</sup>&theta; curve</b> when <i>I<sub>t</sub></i> is plotted against &theta; (peaks at &theta; = 0&deg;, zero at &theta; = &plusmn;90&deg;, symmetric about 0&deg;).</li>
+    <li>A <b>straight line through the origin</b> when <i>I<sub>t</sub></i> is plotted against cos<sup>2</sup>&theta;. The slope of this line is the maximum intensity <i>I</i><sub>0</sub> and the intercept is the background/offset (ideally zero).</li>
+  </ol>
+  <p>Both checks are implemented in the Plot section. A linear regression of <i>I</i> vs cos<sup>2</sup>&theta; with slope &asymp; <i>I</i><sub>0</sub>, intercept &asymp; 0, and <i>R</i><sup>2</sup> close to 1, is taken as confirmation of Malus' Law.</p>
+</section>
+
+<!-- ============== PROCEDURE ============== -->
+<section id="procedure">
+  <h2>4. Procedure</h2>
+  <div class="step"><span class="step-num">1</span><div>Set up the optical bench as in Fig. 3: <b>He&ndash;Ne laser</b> at 0 cm, <b>polariser</b> at ~50 cm, <b>analyser</b> at ~75 cm, <b>photocell</b> at ~125 cm (distances can be adjusted to suit the bench). Mount the photocell in a <b>transversal saddle</b> for fine alignment.</div></div>
+  <div class="step"><span class="step-num">2</span><div>Connect the photocell to the digital multimeter and set the meter to the <b>2000 &mu;A</b> range. The photocell current is proportional to the light intensity falling on it, so the meter reading acts as a direct measure of <i>I<sub>t</sub></i>.</div></div>
+  <div class="step"><span class="step-num">3</span><div>Switch on the laser. Adjust the heights of the laser, polariser, analyser and photocell so that all four are at the <b>same horizontal level</b> and the beam hits the centre of the photocell.</div></div>
+  <div class="step"><span class="step-num">4</span><div>Use the transversal saddle to bring the laser spot to the centre of the photocell, ensuring <b>total illumination</b> of the active area.</div></div>
+  <div class="step"><span class="step-num">5</span><div>If the room is not perfectly dark, measure the <b>background current</b> <i>I</i><sub>noise</sub> with the laser switched OFF. Enter this value in the Observations panel &mdash; it is subtracted from every reading before the fit.</div></div>
+  <div class="step"><span class="step-num">6</span><div>Allow the laser to <b>warm up for ~30 minutes</b> before taking readings. He&ndash;Ne tubes drift in intensity for the first half-hour, which would add noise to the data.</div></div>
+  <div class="step"><span class="step-num">7</span><div>Set the analyser to the <b>90&deg; position</b>, then rotate the polariser until the laser light <b>no longer falls</b> on the photocell. This defines the angular reference for the polariser.</div></div>
+  <div class="step"><span class="step-num">8</span><div>Take the current reading on the multimeter in steps of <b>10&deg;</b> as you rotate the analyser from <b>+90&deg; to &minus;90&deg;</b>. Because the meter reading can fluctuate, record both the <b>minimum</b> and <b>maximum</b> value at each angle; the mean of the two is the actual photocell current.</div></div>
+</section>
+
+<!-- ============== OBSERVATIONS ============== -->
+<section id="observations">
+  <h2>5. Observations</h2>
+
+  <h3>5.1 Setup parameters</h3>
+  <div class="grid cols-3">
+    <div>
+      <label>Background current, <i>I</i><sub>noise</sub> (&mu;A)</label>
+      <input type="number" id="Inoise" value="0" step="0.1"/>
+    </div>
+    <div>
+      <label>Angular step between readings (&deg;)</label>
+      <input type="number" id="stepDeg" value="10" step="1"/>
+    </div>
+    <div>
+      <label>Expected peak current, <i>I</i><sub>0,exp</sub> (&mu;A)</label>
+      <input type="number" id="I0Exp" value="1000" step="10"/>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:6px">
+    Tip: clicking <b>Load sample</b> below fills the table with realistic readings (19 angles, +90&deg; to &minus;90&deg; in 10&deg; steps). You can then edit any cell.
+  </p>
+
+  <h3>5.2 Observation table &mdash; <i>I<sub>t</sub></i> vs &theta;</h3>
+  <p style="font-size:13px;color:var(--muted)">
+    Current in &mu;A. The <b>cos<sup>2</sup>&theta;</b> and <b>Mean <i>I</i></b> = (<i>I</i><sub>min</sub> + <i>I</i><sub>max</sub>) / 2 columns are computed live. The <b><i>I</i> &minus; <i>I</i><sub>noise</sub></b> column is what is plotted and fitted.
+  </p>
+  <div id="obsTable"></div>
+  <div class="row-actions">
+    <button onclick="addRow()">+ Add row</button>
+    <button class="ghost" onclick="loadSample()">Load sample data</button>
+    <button class="danger" onclick="clearTable()">Clear</button>
+  </div>
+</section>
+
+<!-- ============== PLOT ============== -->
+<section id="plot">
+  <h2>6. Plots</h2>
+  <div class="grid cols-2">
+    <div>
+      <h3 style="margin-top:0">6.1 <i>I<sub>t</sub></i> vs &theta; &mdash; cos<sup>2</sup>&theta; curve</h3>
+      <p style="font-size:13px;color:var(--muted)">Measured points and theoretical <i>I</i><sub>0</sub> cos<sup>2</sup>&theta; curve. Maximum at &theta; = 0&deg;, zero at &theta; = &plusmn;90&deg;.</p>
+      <div style="background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px">
+        <canvas id="plotTheta"></canvas>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-top:0">6.2 <i>I<sub>t</sub></i> vs cos<sup>2</sup>&theta; &mdash; linear check</h3>
+      <p style="font-size:13px;color:var(--muted)">A straight line through the origin (slope = <i>I</i><sub>0</sub>) confirms Malus' Law. <i>R</i><sup>2</sup> &rarr; 1 is the goodness-of-fit.</p>
+      <div style="background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px">
+        <canvas id="plotCos2"></canvas>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:13px;color:var(--muted);margin-top:8px">A linear regression is performed automatically; slope, intercept and <i>R</i><sup>2</sup> are shown in the Result panel.</p>
+</section>
+
+<!-- ============== RESULT ============== -->
+<section id="result">
+  <h2>7. Result</h2>
+  <div class="grid cols-2">
+    <div class="result-box">
+      <div style="color:var(--muted);font-size:12px">Verification of Malus' Law</div>
+      <div class="big" id="verifyPill" style="font-size:18px">&mdash;</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="verifyNote">&nbsp;</div>
+    </div>
+    <div class="result-box">
+      <div style="color:var(--muted);font-size:12px">Coefficient of determination, <i>R</i><sup>2</sup></div>
+      <div class="big" id="r2Out">&mdash;</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">1.0 = perfect cos<sup>2</sup> dependence; &lt; 0.95 indicates systematic error.</div>
+    </div>
+  </div>
+  <div class="grid cols-3" style="margin-top:12px">
+    <div class="result-box">
+      <div style="color:var(--muted);font-size:12px">Best-fit slope &asymp; <i>I</i><sub>0</sub> (&mu;A)</div>
+      <div class="big" id="slopeOut">&mdash;</div>
+    </div>
+    <div class="result-box">
+      <div style="color:var(--muted);font-size:12px">Best-fit intercept (&mu;A)</div>
+      <div class="big" id="interceptOut">&mdash;</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="interceptNote">&nbsp;</div>
+    </div>
+    <div class="result-box">
+      <div style="color:var(--muted);font-size:12px">Maximum measured current (&mu;A)</div>
+      <div class="big" id="ImaxOut">&mdash;</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="ImaxNote">&nbsp;</div>
+    </div>
+  </div>
+  <details style="margin-top:14px">
+    <summary>Show all computed values (table of &theta;, cos<sup>2</sup>&theta;, Mean <i>I</i>, <i>I</i> &minus; <i>I</i><sub>noise</sub>)</summary>
+    <div id="derivedTable" style="font-size:13px;color:var(--muted);padding:6px;overflow-x:auto"></div>
+  </details>
+  <p id="errMsg" class="err"></p>
+</section>
+
+<!-- ============== VIVA ============== -->
+<section id="viva">
+  <h2>8. Viva-Voce &amp; Short Questions</h2>
+
+  <div class="viva-q"><b>Q1.</b> What is polarised light? How is it different from ordinary light?
+  <div class="viva-a">In <b>ordinary (unpolarised) light</b> the electric vector vibrates in all directions perpendicular to the propagation direction, with no preferred orientation. In <b>polarised light</b> the electric vector is confined to a single plane (plane-polarised) or has a well-defined rotational handedness (circularly / elliptically polarised).</div></div>
+
+  <div class="viva-q"><b>Q2.</b> State Malus' Law.
+  <div class="viva-a">When a beam of plane-polarised light of intensity <i>I</i><sub>0</sub> falls on an analyser whose transmission axis makes an angle &theta; with the plane of polarisation, the transmitted intensity is <i>I<sub>t</sub></i> = <i>I</i><sub>0</sub> cos<sup>2</sup>&theta;.</div></div>
+
+  <div class="viva-q"><b>Q3.</b> What is the role of the polariser and the analyser?
+  <div class="viva-a">The <b>polariser</b> converts the unpolarised laser light into plane-polarised light of well-defined orientation. The <b>analyser</b> is a second polaroid whose orientation is varied; the variation of the transmitted intensity with the relative angle is what Malus' Law describes.</div></div>
+
+  <div class="viva-q"><b>Q4.</b> What intensity is expected at &theta; = 0&deg;? At &theta; = 90&deg;?
+  <div class="viva-a">At &theta; = 0&deg; the two transmission axes are aligned: <b>I<sub>t</sub></b> = <i>I</i><sub>0</sub> &middot; cos<sup>2</sup>(0) = <b><i>I</i><sub>0</sub></b> (maximum). At &theta; = 90&deg; the axes are crossed: <b>I<sub>t</sub></b> = <i>I</i><sub>0</sub> &middot; cos<sup>2</sup>(90&deg;) = <b>0</b> (complete extinction &mdash; this is the "crossed polaroids" condition).</div></div>
+
+  <div class="viva-q"><b>Q5.</b> Why is the laser allowed to warm up for ~30 minutes?
+  <div class="viva-a">He&ndash;Ne tubes do not stabilise immediately. The output intensity drifts (and can fluctuate mode-by-mode) during the first half-hour as the gas temperature and the cavity length settle. Taking readings on a cold laser would give a slow systematic drift in the data and would broaden the scatter.</div></div>
+
+  <div class="viva-q"><b>Q6.</b> What is the physical meaning of the &plusmn;90&deg; symmetry of the curve?
+  <div class="viva-a">cos<sup>2</sup>&theta; is an even function: cos<sup>2</sup>(&theta;) = cos<sup>2</sup>(&minus;&theta;). The transmitted intensity depends only on the <i>angle between</i> the two axes, not on which side of the polariser the analyser sits. So the I&ndash;&theta; curve is symmetric about &theta; = 0&deg;.</div></div>
+
+  <div class="viva-q"><b>Q7.</b> Why is a photocell used as the detector instead of the eye?
+  <div class="viva-a">The eye is qualitative, slow and biased by dark adaptation. A silicon photocell produces a current proportional to the incident light intensity (over its linear range) and the multimeter reading is objective, instantaneous and quantifiable. The response is also nearly flat across the visible spectrum, so a single calibration works for the He&ndash;Ne line.</div></div>
+
+  <div class="viva-q"><b>Q8.</b> What error does the background current <i>I</i><sub>noise</sub> correct for?
+  <div class="viva-a">If the room is not fully darkened, ambient light contributes a small constant current to the photocell. Subtracting <i>I</i><sub>noise</sub> from every reading removes this offset so that the &theta; = 90&deg; reading is truly zero (not just "the smallest reading").</div></div>
+
+  <div class="viva-q"><b>Q9.</b> In the linear plot of <i>I</i> vs cos<sup>2</sup>&theta;, what should the slope and intercept be?
+  <div class="viva-a">From <i>I</i> = <i>I</i><sub>0</sub> cos<sup>2</sup>&theta; + 0, the slope is <b><i>I</i><sub>0</sub></b> (the maximum transmitted intensity) and the intercept is <b>0</b>. A non-zero intercept usually means uncorrected background light or a non-linear photocell response; a slope that differs from the expected <i>I</i><sub>0</sub> means the laser drifted during the run.</div></div>
+
+  <div class="viva-q"><b>Q10.</b> What would happen if unpolarised light were sent directly into the analyser (no polariser in front)?
+  <div class="viva-a">Unpolarised light can be thought of as a uniform mixture of all polarisation states. Half of it passes through the analyser regardless of the analyser's orientation, so the transmitted intensity is <b>constant</b> (equal to half the incident intensity) as the analyser is rotated &mdash; Malus' Law would not be observed.</div></div>
+</section>
+
+<!-- ============== PRECAUTIONS ============== -->
+<section id="precautions">
+  <h2>9. Precautions</h2>
+  <ol>
+    <li>The analyser and the polariser must be at the <b>same horizontal level</b> as the laser beam; otherwise the beam misses one of the apertures or grazes the polaroid at an angle and the reading drifts.</li>
+    <li>Perform the experiment in a <b>darkened room</b> to minimise background current; measure and subtract <i>I</i><sub>noise</sub> before starting the angular sweep.</li>
+    <li>The photocell is a sensitive device. Adjust it so that the laser spot falls on the <b>centre</b> of its active area; off-centre illumination gives a non-linear response and reduced current.</li>
+    <li>Measure the angle between the analyser and the polariser <b>carefully</b>. A 5&deg; error at &theta; = 60&deg; already produces a ~15 % error in cos<sup>2</sup>&theta;, the worst part of the curve.</li>
+    <li><b>Do not look directly into the laser beam</b>. Even a low-power He&ndash;Ne can damage the retina. Keep the beam path above or below eye level whenever possible.</li>
+    <li>Allow the laser to <b>warm up for 30 minutes</b> before recording any readings, and avoid touching the polaroid mounts (or breathing on them) during the run &mdash; the surface is a soft plastic film.</li>
+  </ol>
+</section>
+
+<div class="footer-note">B.Tech Physics Lab &middot; Optics &amp; Modern Physics &middot; Interactive HTML notebook. Data is auto-saved in your browser.</div>
+
+</main>
+
+<script>
+// ====================================================================
+// STATE
+// ====================================================================
+let rows = [];     // each: {theta, iMin, iMax}
+let chartT = null; // I vs theta
+let chartC = null; // I vs cos^2 theta
+
+// Pre-loaded sample: 19 points, +90 to -90 in 10° steps, I0 ≈ 1000 µA
+// Small ±3% scatter on I_min / I_max; mean is close to the theoretical value.
+const SAMPLE = [
+  {theta: -90, iMin:   1, iMax:   5},
+  {theta: -80, iMin:  26, iMax:  34},
+  {theta: -70, iMin: 108, iMax: 122},
+  {theta: -60, iMin: 242, iMax: 258},
+  {theta: -50, iMin: 400, iMax: 422},
+  {theta: -40, iMin: 576, iMax: 600},
+  {theta: -30, iMin: 735, iMax: 765},
+  {theta: -20, iMin: 870, iMax: 898},
+  {theta: -10, iMin: 958, iMax: 985},
+  {theta:   0, iMin: 990, iMax:1015},
+  {theta:  10, iMin: 960, iMax: 985},
+  {theta:  20, iMin: 870, iMax: 898},
+  {theta:  30, iMin: 735, iMax: 765},
+  {theta:  40, iMin: 576, iMax: 600},
+  {theta:  50, iMin: 400, iMax: 422},
+  {theta:  60, iMin: 242, iMax: 258},
+  {theta:  70, iMin: 108, iMax: 122},
+  {theta:  80, iMin:  26, iMax:  34},
+  {theta:  90, iMin:   1, iMax:   5}
+];
+
+// ====================================================================
+// INIT
+// ====================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();
+  if (rows.length === 0) {
+    rows = SAMPLE.map(r => ({theta: r.theta, iMin: r.iMin, iMax: r.iMax}));
+  }
+  ['Inoise','stepDeg','I0Exp'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { recompute(); saveToStorage(); });
+  });
+  renderTable();
+  recompute();
+});
+
+// ====================================================================
+// TABLE
+// ====================================================================
+function addRow(){
+  const last = rows.length ? rows[rows.length-1].theta - 10 : 0;
+  rows.push({theta: last, iMin: '', iMax: ''});
+  renderTable(); recompute(); saveToStorage();
+}
+function clearTable(){
+  rows = [];
+  addRow();
+}
+function loadSample(){
+  rows = SAMPLE.map(r => ({theta: r.theta, iMin: r.iMin, iMax: r.iMax}));
+  renderTable(); recompute(); saveToStorage();
+}
+function removeRow(i){ rows.splice(i,1); renderTable(); recompute(); saveToStorage(); }
+
+function renderTable(){
+  const c = document.getElementById('obsTable');
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>Sl. No.</th>
+        <th>Angle &theta; (&deg;)</th>
+        <th>cos<sup>2</sup>&theta;</th>
+        <th><i>I</i><sub>min</sub> (&mu;A)</th>
+        <th><i>I</i><sub>max</sub> (&mu;A)</th>
+        <th>Mean <i>I</i> = (<i>I</i><sub>min</sub>+<i>I</i><sub>max</sub>)/2 (&mu;A)</th>
+        <th><i>I</i> &minus; <i>I</i><sub>noise</sub> (&mu;A)</th>
+        <th></th>
+      </tr>
+    </thead><tbody>`;
+  rows.forEach((r, idx) => {
+    const theta = parseFloat(r.theta);
+    const cos2  = isFinite(theta) ? Math.pow(Math.cos(theta*Math.PI/180), 2) : NaN;
+    const imin  = parseFloat(r.iMin), imax = parseFloat(r.iMax);
+    const mean  = (isFinite(imin) && isFinite(imax)) ? (imin + imax)/2 : NaN;
+    const Inoise = parseFloat(document.getElementById('Inoise').value);
+    const Inet  = isFinite(mean) ? mean - Inoise : NaN;
+    html += `<tr>
+      <td>${idx+1}</td>
+      <td><input type="number" step="1" value="${r.theta}" data-i="${idx}" data-k="theta" style="min-width:70px"/></td>
+      <td>${isFinite(cos2) ? cos2.toFixed(4) : '—'}</td>
+      <td><input type="number" step="0.1" value="${r.iMin}" data-i="${idx}" data-k="iMin" style="min-width:80px"/></td>
+      <td><input type="number" step="0.1" value="${r.iMax}" data-i="${idx}" data-k="iMax" style="min-width:80px"/></td>
+      <td>${isFinite(mean) ? mean.toFixed(2) : '—'}</td>
+      <td>${isFinite(Inet) ? Inet.toFixed(2) : '—'}</td>
+      <td><button class="danger" style="padding:2px 8px;font-size:11px" onclick="removeRow(${idx})">×</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  c.innerHTML = html;
+  c.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const i = +e.target.dataset.i;
+      const k = e.target.dataset.k;
+      rows[i][k] = e.target.value === '' ? '' : parseFloat(e.target.value);
+      renderTable();
+      recompute();
+      saveToStorage();
+    });
+  });
+}
+
+// ====================================================================
+// COMPUTE
+// ====================================================================
+function recompute(){
+  const Inoise = parseFloat(document.getElementById('Inoise').value);
+  const I0Exp  = parseFloat(document.getElementById('I0Exp').value);
+
+  // Build clean data arrays
+  const pts = rows
+    .map(r => ({
+      theta: parseFloat(r.theta),
+      iMin:  parseFloat(r.iMin),
+      iMax:  parseFloat(r.iMax)
+    }))
+    .filter(r => isFinite(r.theta) && isFinite(r.iMin) && isFinite(r.iMax))
+    .map(r => {
+      const mean = (r.iMin + r.iMax)/2;
+      const cos2 = Math.pow(Math.cos(r.theta*Math.PI/180), 2);
+      return {theta: r.theta, iMin: r.iMin, iMax: r.iMax, mean, Inet: mean - Inoise, cos2};
+    });
+
+  // Linear regression: I_net = slope * cos2 + intercept
+  const xs = pts.map(p => p.cos2);
+  const ys = pts.map(p => p.Inet);
+  const fit = linearFit(xs, ys);
+
+  // Maximum measured current (used as the "experimental I_0")
+  let Imax = NaN;
+  if (pts.length) {
+    Imax = Math.max(...pts.map(p => p.Inet));
+  }
+
+  // ----- derived table -----
+  const dt = document.getElementById('derivedTable');
+  let tHtml = `<table>
+    <thead>
+      <tr>
+        <th>&theta; (&deg;)</th><th>cos<sup>2</sup>&theta;</th>
+        <th><i>I</i><sub>min</sub></th><th><i>I</i><sub>max</sub></th>
+        <th>Mean <i>I</i></th><th><i>I</i> &minus; <i>I</i><sub>noise</sub></th>
+        <th>Best-fit <i>I</i><sub>0</sub> cos<sup>2</sup>&theta;</th>
+        <th>Residual</th>
+      </tr>
+    </thead><tbody>`;
+  pts.forEach(p => {
+    const pred = isFinite(fit.slope) ? fit.slope * p.cos2 + (fit.intercept||0) : NaN;
+    const res  = isFinite(pred) ? p.Inet - pred : NaN;
+    tHtml += `<tr>
+      <td>${p.theta}</td>
+      <td>${p.cos2.toFixed(4)}</td>
+      <td>${p.iMin.toFixed(1)}</td>
+      <td>${p.iMax.toFixed(1)}</td>
+      <td>${p.mean.toFixed(2)}</td>
+      <td>${p.Inet.toFixed(2)}</td>
+      <td>${isFinite(pred) ? pred.toFixed(2) : '—'}</td>
+      <td>${isFinite(res) ? res.toFixed(2) : '—'}</td>
+    </tr>`;
+  });
+  tHtml += `</tbody></table>`;
+  dt.innerHTML = tHtml;
+
+  // ----- results -----
+  const slopeOut     = document.getElementById('slopeOut');
+  const interceptOut = document.getElementById('interceptOut');
+  const r2Out        = document.getElementById('r2Out');
+  const ImaxOut      = document.getElementById('ImaxOut');
+  const verifyPill   = document.getElementById('verifyPill');
+  const verifyNote   = document.getElementById('verifyNote');
+  const interceptNote= document.getElementById('interceptNote');
+  const ImaxNote     = document.getElementById('ImaxNote');
+
+  slopeOut.textContent     = isFinite(fit.slope)     ? fit.slope.toFixed(2) + ' µA' : '—';
+  interceptOut.textContent = isFinite(fit.intercept) ? fit.intercept.toFixed(2) + ' µA' : '—';
+  r2Out.textContent        = isFinite(fit.r2)        ? fit.r2.toFixed(4) : '—';
+  ImaxOut.textContent      = isFinite(Imax)          ? Imax.toFixed(2) + ' µA' : '—';
+
+  // Verdict pill
+  let verdict = '—', note = '', pillClass = 'pill';
+  if (isFinite(fit.r2) && fit.r2 > 0.99) {
+    verdict = '✓ Malus\' Law verified';
+    pillClass = 'pill ok';
+    note = 'R² > 0.99 — data follows I = I₀ cos²θ within experimental scatter.';
+  } else if (isFinite(fit.r2) && fit.r2 > 0.95) {
+    verdict = '✓ Malus\' Law approximately verified';
+    pillClass = 'pill ok';
+    note = '0.95 < R² < 0.99 — small deviations, check angular alignment and background subtraction.';
+  } else if (isFinite(fit.r2)) {
+    verdict = '✗ Not verified';
+    pillClass = 'pill bad';
+    note = 'R² < 0.95 — check for: (i) laser drift, (ii) crossed-polaroid reference, (iii) photocell saturation.';
+  } else {
+    verdict = '— need more data';
+    pillClass = 'pill';
+  }
+  verifyPill.className = pillClass;
+  verifyPill.textContent = verdict;
+  verifyNote.textContent = note;
+
+  // Intercept sanity
+  if (isFinite(fit.intercept) && Math.abs(fit.intercept) < 5) {
+    interceptNote.innerHTML = '<span class="ok">✓ close to 0 (background correctly subtracted)</span>';
+  } else if (isFinite(fit.intercept)) {
+    interceptNote.innerHTML = '<span class="err">⚠ |intercept| > 5 µA — check background current</span>';
+  } else { interceptNote.textContent = ''; }
+
+  // Imax vs I0 expected
+  if (isFinite(Imax) && isFinite(I0Exp) && I0Exp > 0) {
+    const diff = Math.abs(Imax - I0Exp) / I0Exp * 100;
+    if (diff < 5)        ImaxNote.innerHTML = `<span class="ok">✓ within 5 % of expected I₀ (${I0Exp} µA)</span>`;
+    else if (diff < 15)  ImaxNote.innerHTML = `<span class="pill warn">⚠ within 15 % of expected I₀</span>`;
+    else                 ImaxNote.innerHTML = `<span class="err">⚠ ${diff.toFixed(1)} % off expected I₀</span>`;
+  } else { ImaxNote.textContent = ''; }
+
+  // Error message
+  const errMsg = document.getElementById('errMsg');
+  if (pts.length < 5) errMsg.textContent = '⚠ Need at least 5 valid (θ, I_min, I_max) rows to fit Malus\' Law.';
+  else errMsg.textContent = '';
+
+  // ----- plots -----
+  drawTheta(pts, fit, I0Exp);
+  drawCos2(pts, fit);
+}
+
+// ====================================================================
+// MATH HELPERS
+// ====================================================================
+function fmt(v, d=2){ if(!isFinite(v)) return '—'; return v.toFixed(d); }
+
+function linearFit(xs, ys){
+  const n = xs.length;
+  if (n < 2) return {slope:NaN, intercept:NaN, r2:NaN};
+  let sx=0,sy=0,sxx=0,sxy=0,syy=0;
+  for (let i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; sxx+=xs[i]*xs[i]; sxy+=xs[i]*ys[i]; syy+=ys[i]*ys[i]; }
+  const denom = n*sxx - sx*sx;
+  if (denom===0) return {slope:NaN, intercept:NaN, r2:NaN};
+  const slope     = (n*sxy - sx*sy)/denom;
+  const intercept = (sy - slope*sx)/n;
+  const denomR    = Math.sqrt( (n*sxx - sx*sx) * (n*syy - sy*sy) );
+  const r = denomR===0 ? NaN : (n*sxy - sx*sy)/denomR;
+  return {slope, intercept, r2: r*r};
+}
+
+// ====================================================================
+// PLOTS
+// ====================================================================
+function drawTheta(pts, fit, I0Exp){
+  const ctx = document.getElementById('plotTheta');
+  if (chartT) chartT.destroy();
+  // Sort by theta for a clean line
+  const sorted = [...pts].sort((a,b) => a.theta - b.theta);
+  const fineTheta = [];
+  for (let t = -90; t <= 90; t += 1) fineTheta.push(t);
+  const I0 = isFinite(fit.slope) ? fit.slope : (isFinite(I0Exp) ? I0Exp : 1000);
+  const fitData = fineTheta.map(t => ({
+    x: t,
+    y: I0 * Math.pow(Math.cos(t*Math.PI/180), 2)
+  }));
+  chartT = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {label:'Measured (Mean I)', data: sorted.map(p => ({x:p.theta, y:p.Inet})),
+         backgroundColor:'#38bdf8', pointRadius:5},
+        {label:'Theoretical I₀ cos²θ', data: fitData, type:'line',
+         borderColor:'#f87171', borderWidth:2, pointRadius:0, fill:false}
+      ]
+    },
+    options: {
+      plugins:{legend:{labels:{color:'#cbd5e1'}}},
+      scales:{
+        x:{title:{display:true,text:'θ (°)',color:'#cbd5e1'}, ticks:{color:'#cbd5e1'}, grid:{color:'#334155'}},
+        y:{title:{display:true,text:'I (µA)',color:'#cbd5e1'}, ticks:{color:'#cbd5e1'}, grid:{color:'#334155'}}
+      }
+    }
+  });
+}
+
+function drawCos2(pts, fit){
+  const ctx = document.getElementById('plotCos2');
+  if (chartC) chartC.destroy();
+  // fit line endpoints
+  const xMin = 0, xMax = 1;
+  const fitData = isFinite(fit.slope) ? [
+    {x:xMin, y: fit.slope*xMin + fit.intercept},
+    {x:xMax, y: fit.slope*xMax + fit.intercept}
+  ] : [];
+  chartC = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {label:'Measured (I, cos²θ)', data: pts.map(p => ({x:p.cos2, y:p.Inet})),
+         backgroundColor:'#a78bfa', pointRadius:5},
+        {label:'Best-fit line I = a·cos²θ + b', data: fitData, type:'line',
+         borderColor:'#f87171', borderWidth:2, pointRadius:0, fill:false}
+      ]
+    },
+    options: {
+      plugins:{legend:{labels:{color:'#cbd5e1'}}},
+      scales:{
+        x:{title:{display:true,text:'cos²θ',color:'#cbd5e1'}, min:0, max:1, ticks:{color:'#cbd5e1'}, grid:{color:'#334155'}},
+        y:{title:{display:true,text:'I (µA)',color:'#cbd5e1'}, ticks:{color:'#cbd5e1'}, grid:{color:'#334155'}}
+      }
+    }
+  });
+}
+
+// ====================================================================
+// PERSISTENCE
+// ====================================================================
+function saveToStorage(){
+  const data = {
+    rows,
+    Inoise: document.getElementById('Inoise').value,
+    stepDeg: document.getElementById('stepDeg').value,
+    I0Exp: document.getElementById('I0Exp').value
+  };
+  try{ localStorage.setItem('exp6_data', JSON.stringify(data)); }catch(e){}
+}
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem('exp6_data');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    ['Inoise','stepDeg','I0Exp'].forEach(k => { if (d[k] !== undefined) document.getElementById(k).value = d[k]; });
+    if (Array.isArray(d.rows) && d.rows.length) rows = d.rows;
+  }catch(e){}
+}
+
+function resetAll(){
+  if(!confirm('Clear all entered data and reset to the default sample?')) return;
+  localStorage.removeItem('exp6_data');
+  document.getElementById('Inoise').value = 0;
+  document.getElementById('stepDeg').value = 10;
+  document.getElementById('I0Exp').value  = 1000;
+  rows = SAMPLE.map(r => ({theta: r.theta, iMin: r.iMin, iMax: r.iMax}));
+  renderTable(); recompute(); saveToStorage();
+}
+</script>
+</body>
+</html>
